@@ -17,10 +17,28 @@ if errorlevel 1 (
   exit /b 1
 )
 
+taskkill /f /im CompressPDF.exe >nul 2>nul
+
 pyinstaller --noconfirm --clean --windowed --name CompressPDF --add-binary "%GS_BIN%;ghostscript" app.py
 if errorlevel 1 (
-  echo [ERROR] Build gagal. Cek error di output terminal di atas.
-  exit /b 1
+  echo [WARN] Build utama gagal. Kemungkinan folder dist sedang terkunci.
+  echo [WARN] Mencoba ulang ke output folder alternatif...
+
+  set "ALT_DIST=dist_retry_%RANDOM%%RANDOM%"
+  pyinstaller --noconfirm --clean --windowed --distpath "%ALT_DIST%" --name CompressPDF --add-binary "%GS_BIN%;ghostscript" app.py
+  if errorlevel 1 (
+    echo [ERROR] Build retry juga gagal.
+    echo [HINT] Tutup aplikasi CompressPDF, tutup File Explorer yang membuka folder dist, lalu coba lagi.
+    exit /b 1
+  )
+
+  if not exist "%ALT_DIST%\CompressPDF\CompressPDF.exe" (
+    echo [ERROR] Build retry selesai tapi file output tidak ditemukan.
+    exit /b 1
+  )
+
+  echo [OK] Build selesai: %ALT_DIST%\CompressPDF\CompressPDF.exe
+  exit /b 0
 )
 
 if not exist "dist\CompressPDF\CompressPDF.exe" (

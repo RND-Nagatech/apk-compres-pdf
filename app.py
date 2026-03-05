@@ -64,14 +64,43 @@ class App(DnDCTk):
         self.total_processed = 0
         self.total_elapsed_seconds = 0.0
 
-        self.output_folder = Path.home() / "Documents" / "Compressed_PDFs"
-        self.output_folder.mkdir(parents=True, exist_ok=True)
+        self.output_folder = self._resolve_output_folder()
         self._setup_performance_logger()
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self._build_ui()
         self.queue_poll_job = self.after(120, self._process_queue)
         self._start_perf_monitor()
+
+    @staticmethod
+    def _resolve_output_folder() -> Path:
+        """Resolve a writable output folder with cross-platform fallbacks."""
+        home_dir = Path.home()
+        candidates: list[Path] = [
+            home_dir / "Documents" / "Compressed_PDFs",
+            home_dir / "Compressed_PDFs",
+        ]
+
+        if os.name == "nt":
+            local_app_data = os.environ.get("LOCALAPPDATA")
+            if local_app_data:
+                candidates.insert(0, Path(local_app_data) / "CompressPDF" / "Compressed_PDFs")
+
+        candidates.extend(
+            [
+                Path.cwd() / "Compressed_PDFs",
+                Path(os.environ.get("TMP", os.environ.get("TEMP", "."))) / "Compressed_PDFs",
+            ]
+        )
+
+        for candidate in candidates:
+            try:
+                candidate.mkdir(parents=True, exist_ok=True)
+                return candidate
+            except OSError:
+                continue
+
+        raise RuntimeError("Tidak dapat membuat folder output yang bisa ditulis di sistem ini.")
 
     def _setup_performance_logger(self) -> None:
         """Create file logger for tracing UI responsiveness issues."""

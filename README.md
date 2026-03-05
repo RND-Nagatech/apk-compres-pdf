@@ -197,6 +197,9 @@ Script ini akan:
 - Cek file `vendor/ghostscript/macos/gs`
 - Set executable permission ke binary GS
 - Build `.app` via PyInstaller
+- Ad-hoc sign app (`codesign --sign -`)
+- Hapus attribute quarantine jika ada
+- Menjalankan verifikasi `codesign` dan assessment `spctl`
 
 ## 6.4 Build Manual (Opsional)
 
@@ -233,6 +236,13 @@ Untuk app unsigned, kadang diblokir macOS:
 
 ```bash
 xattr -dr com.apple.quarantine dist/CompressPDF.app
+```
+
+Validasi cepat hasil build:
+
+```bash
+codesign --verify --deep --strict --verbose=2 dist/CompressPDF.app
+spctl --assess --type execute --verbose=4 dist/CompressPDF.app
 ```
 
 Untuk distribusi profesional, gunakan:

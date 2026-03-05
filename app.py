@@ -36,13 +36,14 @@ class App(DnDCTk):
 
     def __init__(self) -> None:
         super().__init__()
+        self.platform_system = platform.system()
         self.title("CompressPDF")
         self.geometry("1180x760")
         self.minsize(1040, 680)
 
         ctk.set_default_color_theme("green")
         ctk.set_appearance_mode("dark")
-        ctk.set_widget_scaling(0.9)
+        self._apply_platform_ui_tuning()
 
         self.selected_files: list[str] = []
         self.compression_level = "Low"
@@ -71,6 +72,25 @@ class App(DnDCTk):
         self._build_ui()
         self.queue_poll_job = self.after(120, self._process_queue)
         self._start_perf_monitor()
+
+    def _apply_platform_ui_tuning(self) -> None:
+        """Tune UI scaling per OS to keep layout proportions closer across platforms."""
+        widget_scale = 0.9
+        window_scale = 1.0
+
+        if self.platform_system == "Windows":
+            widget_scale = 0.86
+            window_scale = 1.0
+            try:
+                self.tk.call("tk", "scaling", 1.0)
+            except Exception:
+                pass
+        elif self.platform_system == "Darwin":
+            widget_scale = 0.9
+            window_scale = 1.0
+
+        ctk.set_widget_scaling(widget_scale)
+        ctk.set_window_scaling(window_scale)
 
     @staticmethod
     def _resolve_output_folder() -> Path:
